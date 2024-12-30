@@ -98,7 +98,7 @@ const EditTask: React.FC = () => {
           <div className="flex justify-center">
             <button
               type="submit"
-              className="w-[150px] py-3 bg-gray-600 text-white font-bold rounded-full hover:bg-gray-800 focus:outline-none focus:ring-2 transition-all"
+              className="w-[150px] py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 transition-all"
             >
               Guardar Cambios
             </button>
