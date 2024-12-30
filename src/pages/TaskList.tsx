@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import client from '../api/client';
 import { Check, FilePenLine, Trash2 } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -11,7 +12,10 @@ interface Task {
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
+  // Obtener tareas al cargar el componente
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -29,8 +33,8 @@ const TaskList: React.FC = () => {
     try {
       const task = tasks.find((task) => task.id === id);
       if (task) {
-        const updatedTask = { completed: !task.completed }; 
-        await client.put(`/api/tasks/${id}`, updatedTask); 
+        const updatedTask = { completed: !task.completed };
+        await client.put(`/api/tasks/${id}`, updatedTask);
         setTasks((prevTasks) =>
           prevTasks.map((t) =>
             t.id === id ? { ...t, completed: !t.completed } : t
@@ -42,20 +46,31 @@ const TaskList: React.FC = () => {
     }
   };
 
-  const handleEdit = async (id: string) => {
+  const handleEdit = (id: string) => {
     window.location.href = `/edit/${id}`;
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmDelete = window.confirm('¿Estás seguro de que deseas eliminar esta tarea?');
-    if (!confirmDelete) return;
+  const handleDelete = async () => {
+    if (!selectedTaskId) return;
 
     try {
-      await client.delete(`/api/tasks/${id}`);
-      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+      await client.delete(`/api/tasks/${selectedTaskId}`);
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== selectedTaskId));
+      setIsModalOpen(false);
+      setSelectedTaskId(null);
     } catch (error) {
       console.error('Error al eliminar la tarea:', error);
     }
+  };
+
+  const openDeleteModal = (id: string) => {
+    setSelectedTaskId(id);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedTaskId(null);
   };
 
   return (
@@ -64,20 +79,22 @@ const TaskList: React.FC = () => {
         Lista de <span className="text-gray-100">Tareas</span>
       </h1>
 
-      <button className='mb-4'>
-        <a 
-          href="/create" 
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold">
+      <button className="mb-4">
+        <a
+          href="/create"
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold"
+        >
           Crear Tarea
         </a>
       </button>
+
       <div className="bg-white bg-opacity-10 backdrop-blur-md p-8 rounded-lg shadow-lg w-full max-w-2xl">
         {tasks.length > 0 ? (
           <ul className="space-y-4">
             {tasks.map((task) => (
               <li
                 key={task.id}
-                className="p-4 bg-white  rounded-lg shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center"
+                className="p-4 bg-white rounded-lg shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center"
               >
                 <div className="flex-1 mb-4 sm:mb-0">
                   <h3 className="text-2xl font-bold text-gray-800 mb-2">{task.title}</h3>
@@ -90,7 +107,7 @@ const TaskList: React.FC = () => {
                     {task.completed ? 'Completada' : 'Pendiente'}
                   </p>
                 </div>
-                <div className="flex space-x-2 ">
+                <div className="flex space-x-2">
                   <button
                     onClick={() => handleComplete(task.id)}
                     className={`px-4 py-2 rounded-lg font-semibold ${
@@ -108,7 +125,7 @@ const TaskList: React.FC = () => {
                     <FilePenLine size={20} />
                   </button>
                   <button
-                    onClick={() => handleDelete(task.id)}
+                    onClick={() => openDeleteModal(task.id)}
                     className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold"
                   >
                     <Trash2 size={20} />
@@ -121,6 +138,34 @@ const TaskList: React.FC = () => {
           <p className="text-gray-300 text-center">No hay tareas disponibles.</p>
         )}
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h1 className='text-2xl font-semibold text-red-500 mb-4 justify-center flex items-center'>
+              <TriangleAlert size={24} className='inline-block mr-2 ' />
+              Alerta
+            </h1>
+            <h2 className="text-lg font-bold mb-4 text-gray-800">
+              ¿Estás seguro de que deseas eliminar esta tarea?
+            </h2>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
